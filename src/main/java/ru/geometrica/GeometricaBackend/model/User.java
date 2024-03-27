@@ -3,17 +3,31 @@ package ru.geometrica.GeometricaBackend.model;
 import jakarta.persistence.*;
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotNull;
+import org.aspectj.bridge.Message;
+import org.hibernate.annotations.GenericGenerator;
+import org.hibernate.annotations.UuidGenerator;
+import org.hibernate.validator.constraints.UniqueElements;
+import org.springframework.security.core.GrantedAuthority;
+import org.springframework.security.core.authority.SimpleGrantedAuthority;
+import org.springframework.security.core.userdetails.UserDetails;
+import org.springframework.security.crypto.password.PasswordEncoder;
+import org.springframework.security.crypto.password.StandardPasswordEncoder;
+import ru.geometrica.GeometricaBackend.security.SHA256PasswordEncoder;
 
+import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.UUID;
 
 @Entity
 @Table(name = "customers")
-public class User {
+public class User implements UserDetails {
 
 	@Id
-	@GeneratedValue(strategy=GenerationType.AUTO)
+	@GeneratedValue(strategy = GenerationType.AUTO)
 	public Long id;
 
 	@NotNull
@@ -33,31 +47,46 @@ public class User {
 	public String homeAdress;
 
 	@NotNull
-	Permissions permissionLevel;
+	public String passwordHash;
 
-	@NotNull
-	public byte[] passwordHash;
-
-	public static enum Permissions {USER, MANAGER, ADMIN}
-
-	public User() {}
-
-	public User(String firstName, String lastName) throws Exception {
-		this.firstName = firstName;
-		this.lastName = lastName;
+	@Override
+	public Collection<? extends GrantedAuthority> getAuthorities() {
+		ArrayList<SimpleGrantedAuthority> al = new ArrayList<>();
+		al.add(new SimpleGrantedAuthority("USER"));
+		return al;
 	}
 
-	public User(String firstName, String lastName, String password) throws Exception {
-
-		this.firstName = firstName;
-		this.lastName = lastName;
-		MessageDigest md = MessageDigest.getInstance("SHA-256");
-		this.passwordHash = md.digest(password.getBytes(StandardCharsets.UTF_8));
-
+	@Override
+	public String getPassword() {
+		return this.passwordHash;
 	}
 
-	public void setPasswordHash(String password) throws NoSuchAlgorithmException {
-		MessageDigest md = MessageDigest.getInstance("SHA-256");
-		this.passwordHash = md.digest(password.getBytes(StandardCharsets.UTF_8));
+	@Override
+	public String getUsername() {
+		return this.emailAdress;
+	}
+
+	@Override
+	public boolean isAccountNonExpired() {
+		return true;
+	}
+
+	@Override
+	public boolean isAccountNonLocked() {
+		return true;
+	}
+
+	@Override
+	public boolean isCredentialsNonExpired() {
+		return true;
+	}
+
+	@Override
+	public boolean isEnabled() {
+		return true;
+	}
+
+	public void setPasswordHash(String password, PasswordEncoder encoder) {
+		this.passwordHash = encoder.encode(password);
 	}
 }

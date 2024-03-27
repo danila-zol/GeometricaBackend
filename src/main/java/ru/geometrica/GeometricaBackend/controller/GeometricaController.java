@@ -5,6 +5,8 @@ import java.io.IOException;
 import java.nio.file.Path;
 import java.util.Vector;
 
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -20,16 +22,20 @@ public class GeometricaController {
 	private final MediaRepository mediaRepository;
 	private final TokenRepository tokenRepository;
 	private final TokenFactory tokenFactory = new TokenFactory();
+	private final PasswordEncoder passwordEncoder;
 
 	GeometricaController(
 			UserRepository userRepository,
 			TilesRepository tilesRepository,
 			MediaRepository mediaRepository,
-			TokenRepository tokenRepository) {
+			TokenRepository tokenRepository,
+			PasswordEncoder passwordEncoder
+	) {
 		this.userRepository  = userRepository;
 		this.tilesRepository = tilesRepository;
 		this.mediaRepository = mediaRepository;
 		this.tokenRepository = tokenRepository;
+		this.passwordEncoder = passwordEncoder;
 	}
 
 	@PostMapping("/tokens/recieve")
@@ -50,9 +56,9 @@ public class GeometricaController {
 	}
 
 	@PostMapping("/customers/register")
-	public void registerUser(@RequestBody User newCustomer) throws Exception {
-
-		userRepository.save(newCustomer);
+	public void registerUser(@RequestBody RegistrationRequest request)  {
+		request.userData.setPasswordHash(request.password, passwordEncoder);
+		userRepository.save(request.userData);
 	}
 
 	@PostMapping("/media/upload")
